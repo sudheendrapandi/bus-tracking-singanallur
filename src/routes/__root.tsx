@@ -77,14 +77,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "Singanallur_Bus_Tracking" },
+      { name: "description", content: "Simulated real-time Bus Availability System" },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "Singanallur_Bus_Tracking" },
+      { property: "og:description", content: "Simulated real-time Bus Availability System" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Singanallur_Bus_Tracking" },
+      { name: "twitter:description", content: "Simulated real-time Bus Availability System" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/292f60ce-e1ce-4908-852e-34238052d7bc/id-preview-0276468b--1ddef1e6-12a0-44a3-819b-62babdbe15fa.lovable.app-1781093818074.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/292f60ce-e1ce-4908-852e-34238052d7bc/id-preview-0276468b--1ddef1e6-12a0-44a3-819b-62babdbe15fa.lovable.app-1781093818074.png" },
     ],
     links: [
       {
