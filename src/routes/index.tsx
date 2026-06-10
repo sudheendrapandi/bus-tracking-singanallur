@@ -69,20 +69,23 @@ function seedBuses(): Bus[] {
 }
 
 function Dashboard() {
-  const [buses, setBuses] = useState<Bus[]>(() => seedBuses());
+  const [buses, setBuses] = useState<Bus[]>([]);
   const [selected, setSelected] = useState<string>("mdu");
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useState<Date | null>(null);
   const [query, setQuery] = useState("");
+  const [bookingBus, setBookingBus] = useState<Bus | null>(null);
 
-  // Real-time tick: every second update clock + simulate bookings
+  // Seed + tick only on client to avoid SSR hydration mismatch
   useEffect(() => {
+    setBuses(seedBuses());
+    setNow(new Date());
     const t = setInterval(() => {
       setNow(new Date());
       setBuses((prev) =>
         prev.map((b) => {
-          // 18% chance per second that this bus has activity
+          if (b.id === bookingBusIdRef.current) return b; // pause auto-updates while user books
           if (Math.random() > 0.82) {
-            const delta = Math.random() < 0.78 ? 1 : -1; // mostly bookings, some cancellations
+            const delta = Math.random() < 0.78 ? 1 : -1;
             const next = Math.min(b.totalSeats, Math.max(0, b.bookedSeats + delta));
             return { ...b, bookedSeats: next };
           }
@@ -92,6 +95,22 @@ function Dashboard() {
     }, 1000);
     return () => clearInterval(t);
   }, []);
+
+  const bookingBusIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    bookingBusIdRef.current = bookingBus?.id ?? null;
+  }, [bookingBus]);
+
+  const confirmBooking = (busId: string, seats: number[]) => {
+    setBuses((prev) =>
+      prev.map((b) =>
+        b.id === busId
+          ? { ...b, bookedSeats: Math.min(b.totalSeats, b.bookedSeats + seats.length) }
+          : b,
+      ),
+    );
+    setBookingBus(null);
+  };
 
   const route = ROUTES.find((r) => r.id === selected)!;
   const routeBuses = useMemo(
