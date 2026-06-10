@@ -309,7 +309,15 @@ function Dashboard() {
   );
 }
 
-function Clock({ now }: { now: Date }) {
+function Clock({ now }: { now: Date | null }) {
+  if (!now) {
+    return (
+      <div className="text-right">
+        <div className="text-xl font-bold tabular-nums leading-none opacity-30">--:--:--</div>
+        <div className="text-[11px] text-muted-foreground">loading</div>
+      </div>
+    );
+  }
   const t = now.toLocaleTimeString("en-IN", { hour12: false });
   const d = now.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
   return (
