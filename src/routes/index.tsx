@@ -363,7 +363,7 @@ function StatCard({
   );
 }
 
-function BusCard({ bus }: { bus: Bus }) {
+function BusCard({ bus, onBook }: { bus: Bus; onBook: () => void }) {
   const available = bus.totalSeats - bus.bookedSeats;
   const pct = (bus.bookedSeats / bus.totalSeats) * 100;
   const tone = pct > 85 ? "danger" : pct > 60 ? "warning" : "success";
@@ -428,6 +428,7 @@ function BusCard({ bus }: { bus: Bus }) {
           <span className="live-dot" /> live
         </span>
         <button
+          onClick={onBook}
           disabled={available === 0}
           className="rounded-lg bg-[var(--gradient-primary)] px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-[var(--shadow-glow)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
         >
@@ -435,6 +436,176 @@ function BusCard({ bus }: { bus: Bus }) {
         </button>
       </div>
     </article>
+  );
+}
+
+function BookingModal({
+  bus,
+  destination,
+  price,
+  onClose,
+  onConfirm,
+}: {
+  bus: Bus;
+  destination: string;
+  price: number;
+  onClose: () => void;
+  onConfirm: (seats: number[]) => void;
+}) {
+  const [selected, setSelected] = useState<number[]>([]);
+  const [stage, setStage] = useState<"select" | "success">("select");
+  const [pnr, setPnr] = useState("");
+
+  // Deterministic "already booked" seat indices based on bus.id + bookedSeats count
+  const bookedSet = useMemo(() => {
+    const set = new Set<number>();
+    let seed = 0;
+    for (let i = 0; i < bus.id.length; i++) seed = (seed * 31 + bus.id.charCodeAt(i)) >>> 0;
+    const rand = () => {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 0xffffffff;
+    };
+    while (set.size < bus.bookedSeats && set.size < bus.totalSeats) {
+      set.add(Math.floor(rand() * bus.totalSeats));
+    }
+    return set;
+  }, [bus.id, bus.bookedSeats, bus.totalSeats]);
+
+  const toggle = (n: number) => {
+    if (bookedSet.has(n)) return;
+    setSelected((s) => (s.includes(n) ? s.filter((x) => x !== n) : s.length >= 6 ? s : [...s, n]));
+  };
+
+  const confirm = () => {
+    if (selected.length === 0) return;
+    const code = "PNR" + Math.random().toString(36).slice(2, 8).toUpperCase();
+    setPnr(code);
+    setStage("success");
+  };
+
+  const finish = () => onConfirm(selected);
+
+  const total = selected.length * price;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-in fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="card-elevated relative w-full max-w-2xl overflow-hidden p-6 animate-in zoom-in-95"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full bg-secondary text-muted-foreground hover:bg-muted hover:text-foreground"
+          aria-label="Close"
+        >
+          ✕
+        </button>
+
+        {stage === "select" ? (
+          <>
+            <div className="mb-4">
+              <div className="text-xs uppercase tracking-widest text-muted-foreground">
+                {bus.operator} · {bus.number}
+              </div>
+              <div className="mt-1 text-2xl font-bold">
+                Coimbatore → <span className="gradient-text">{destination}</span>
+              </div>
+              <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                <span>🕒 Departs {bus.departure}</span>
+                <span>🚌 {bus.type}</span>
+                <span>💺 {bus.totalSeats - bus.bookedSeats} free</span>
+              </div>
+            </div>
+
+            <div className="mb-4 flex items-center justify-center gap-5 text-[11px] text-muted-foreground">
+              <span className="flex items-center gap-1.5"><i className="block h-3 w-3 rounded bg-secondary border border-border" /> Available</span>
+              <span className="flex items-center gap-1.5"><i className="block h-3 w-3 rounded bg-primary" /> Selected</span>
+              <span className="flex items-center gap-1.5"><i className="block h-3 w-3 rounded bg-danger/30 border border-danger/50" /> Booked</span>
+            </div>
+
+            <div className="rounded-2xl border border-border bg-background/40 p-4">
+              <div className="mb-3 flex items-center justify-between text-[10px] uppercase tracking-widest text-muted-foreground">
+                <span>🚪 Front</span>
+                <span>Driver 🪟</span>
+              </div>
+              <div className="grid grid-cols-5 gap-2">
+                {Array.from({ length: bus.totalSeats }).map((_, i) => {
+                  const isBooked = bookedSet.has(i);
+                  const isSel = selected.includes(i);
+                  // insert aisle gap every 4 seats (col 3 empty)
+                  const aisle = i % 4 === 2;
+                  return (
+                    <>
+                      <button
+                        key={i}
+                        onClick={() => toggle(i)}
+                        disabled={isBooked}
+                        className={`relative aspect-square rounded-lg text-xs font-bold transition ${
+                          isBooked
+                            ? "cursor-not-allowed bg-danger/20 text-danger/60 border border-danger/40"
+                            : isSel
+                              ? "bg-primary text-primary-foreground scale-105 shadow-[var(--shadow-glow)]"
+                              : "bg-secondary text-foreground hover:bg-muted hover:scale-105"
+                        }`}
+                      >
+                        {i + 1}
+                      </button>
+                      {aisle && <div key={`a-${i}`} className="aspect-square" />}
+                    </>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-col-reverse items-stretch justify-between gap-3 sm:flex-row sm:items-center">
+              <div className="text-sm">
+                <div className="text-muted-foreground">
+                  {selected.length} seat{selected.length !== 1 ? "s" : ""} selected
+                  {selected.length > 0 && ` · #${selected.map((n) => n + 1).join(", ")}`}
+                </div>
+                <div className="text-2xl font-black tabular-nums gradient-text">₹{total}</div>
+              </div>
+              <button
+                onClick={confirm}
+                disabled={selected.length === 0}
+                className="rounded-xl bg-[var(--gradient-primary)] px-6 py-3 text-sm font-bold text-primary-foreground shadow-[var(--shadow-glow)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Confirm booking →
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="py-6 text-center">
+            <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-success/15 text-5xl">
+              ✓
+            </div>
+            <h3 className="mt-4 text-2xl font-black">Booking confirmed!</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {selected.length} seat{selected.length !== 1 ? "s" : ""} booked on {bus.operator} to {destination}
+            </p>
+            <div className="mx-auto mt-5 max-w-sm rounded-xl border border-dashed border-primary/40 bg-primary/5 p-4 text-left">
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Your PNR</div>
+              <div className="text-xl font-black tabular-nums gradient-text">{pnr}</div>
+              <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                <div>Seats: <span className="font-semibold text-foreground">{selected.map((n) => n + 1).join(", ")}</span></div>
+                <div>Total: <span className="font-semibold text-foreground">₹{total}</span></div>
+                <div>Depart: <span className="font-semibold text-foreground">{bus.departure}</span></div>
+                <div>Bus: <span className="font-semibold text-foreground">{bus.number}</span></div>
+              </div>
+            </div>
+            <button
+              onClick={finish}
+              className="mt-5 rounded-xl bg-[var(--gradient-primary)] px-6 py-3 text-sm font-bold text-primary-foreground shadow-[var(--shadow-glow)] transition hover:brightness-110"
+            >
+              Done
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
