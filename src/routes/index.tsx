@@ -282,7 +282,7 @@ function Dashboard() {
         {/* BUS LIST */}
         <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {routeBuses.map((b) => (
-            <BusCard key={b.id} bus={b} />
+            <BusCard key={b.id} bus={b} onBook={() => setBookingBus(b)} />
           ))}
           {routeBuses.length === 0 && (
             <div className="col-span-full rounded-xl border border-dashed border-border p-10 text-center text-muted-foreground">
@@ -295,6 +295,16 @@ function Dashboard() {
           Real-time simulation · Data refreshes every second · Singanallur Bus Stand
         </footer>
       </div>
+
+      {bookingBus && (
+        <BookingModal
+          bus={bookingBus}
+          destination={ROUTES.find((r) => r.id === bookingBus.routeId)!.destination}
+          price={ROUTES.find((r) => r.id === bookingBus.routeId)!.basePrice}
+          onClose={() => setBookingBus(null)}
+          onConfirm={(seats) => confirmBooking(bookingBus.id, seats)}
+        />
+      )}
     </main>
   );
 }
