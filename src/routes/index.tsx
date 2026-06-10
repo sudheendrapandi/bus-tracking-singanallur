@@ -538,9 +538,8 @@ function BookingModal({
                   // insert aisle gap every 4 seats (col 3 empty)
                   const aisle = i % 4 === 2;
                   return (
-                    <>
+                    <Fragment key={i}>
                       <button
-                        key={i}
                         onClick={() => toggle(i)}
                         disabled={isBooked}
                         className={`relative aspect-square rounded-lg text-xs font-bold transition ${
@@ -553,8 +552,8 @@ function BookingModal({
                       >
                         {i + 1}
                       </button>
-                      {aisle && <div key={`a-${i}`} className="aspect-square" />}
-                    </>
+                      {aisle && <div className="aspect-square" />}
+                    </Fragment>
                   );
                 })}
               </div>
