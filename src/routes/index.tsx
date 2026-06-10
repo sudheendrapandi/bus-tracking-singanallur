@@ -137,7 +137,7 @@ function Dashboard() {
     return { total, booked, available, pct, count: list.length };
   }, [buses, selected]);
 
-  const isPeak = now.getHours() >= 17 && now.getHours() <= 21;
+  const isPeak = !!now && now.getHours() >= 17 && now.getHours() <= 21;
 
   return (
     <main className="min-h-screen px-4 py-6 md:px-8 md:py-10">
